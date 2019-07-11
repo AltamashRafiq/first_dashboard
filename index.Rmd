@@ -1,9 +1,59 @@
 ---
-title: "My Website"
+title: "Altamash's First Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
 ---
 
-Hello, Website!
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(dplyr)
+library(babynames)
+library(dygraphs)
+library(highcharter)
+```
 
-For more information about simple R Markdown websites, please read the documentation at https://bookdown.org/yihui/rmarkdown/rmarkdown-site.html.
+Column {data-width=650}
+-----------------------------------------------------------------------
 
-Please also note that simple R Markdown sites are _not_ based on **blogdown**. They are probably good for websites with only a few Rmd documents. For larger-scale and more sophisticated websites (such as blogs), you may want to use **blogdown** instead: https://github.com/rstudio/blogdown.
+### Chart A
+
+```{r}
+lungDeaths <- cbind(mdeaths, fdeaths)
+dygraph(lungDeaths) %>%
+  dySeries("mdeaths", label = "Male") %>%
+  dySeries("fdeaths", label = "Female") %>%
+  dyOptions(stackedGraph = TRUE) %>%
+  dyRangeSelector(height = 20)
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+df = babynames %>%
+  filter(grepl("^I", name)) %>%
+  group_by(name) %>%
+  tally(wt=n) %>%
+  arrange(desc(n)) %>%
+  slice(1:4)
+  
+highchart() %>%
+  hc_chart(type = "column") %>%
+  hc_title(text = "Test") %>%
+  hc_xAxis(categories = as.list(df[["name"]])) %>%
+  hc_plotOptions(column = list(dataLabels = list(enabled = TRUE))) %>%
+  hc_add_series(name = "Irene", data = df[["n"]][which(df[["name"]] == "Irene")]) %>%
+  hc_add_series(name = "Isabella", data = df[["n"]][which(df[["name"]] == "Isabella")]) %>%
+  hc_add_series(name = "Isaac", data = df[["n"]][which(df[["name"]] == "Isaac")]) %>%
+  hc_add_series(name = "Ian", data = df[["n"]][which(df[["name"]] == "Ian")])
+```
+
+### Chart C
+
+```{r}
+plot(iris)
+```

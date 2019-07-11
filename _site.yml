@@ -1,10 +1,6 @@
 name: "my-website"
 navbar:
-  title: "My Website"
+  title: "My First Dashboard"
   left:
-    - text: "Home"
+    - text: "Dashboard"
       href: index.html
-    - text: "About"
-      href: about.html
-    - text: "Test Flex Dashboard"
-      href: first_flexdash.html
