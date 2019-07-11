@@ -1,6 +1,6 @@
 name: "my-website"
 navbar:
-  title: "My First Dashboard"
+  title: "Altamash's First Dashboard"
   left:
     - text: "Dashboard"
       href: index.html
