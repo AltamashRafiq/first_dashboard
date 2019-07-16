@@ -41,10 +41,7 @@ punjab = read_df %>% filter(province == "Punjab") %>% geojson_list(lat = "lat", 
 sindh = read_df %>% filter(province == "Sindh") %>% geojson_list(lat = "lat", lon = "lon")
 baloch = read_df %>% filter(province == "Balochistan") %>% geojson_list(lat = "lat", lon = "lon")
 kpk = read_df %>% filter(province == "Khyber Pakhtunkhwa") %>% geojson_list(lat = "lat", lon = "lon")
-fata = read_df %>% filter(province == "F.A.T.A.") %>% geojson_list(lat = "lat", lon = "lon")
-kashmir = read_df %>% filter(province == "Azad Kashmir") %>% geojson_list(lat = "lat", lon = "lon")
 capital = read_df %>% filter(province == "Federal Capital Territory") %>% geojson_list(lat = "lat", lon = "lon")
-gilgit = read_df %>% filter(province == "Gilgit Baltistan") %>% geojson_list(lat = "lat", lon = "lon")
 
 library(htmlTable)
 library(knitr)
@@ -79,16 +76,6 @@ highchart(type = "map") %>%
                 dataLabels = list(enabled = FALSE),
                 name = "Khyber Pakhtunkhwa", 
                 color = "skyblue", stickyTracking = TRUE,
-                animation = list(duration = 4000)) %>%
-  hc_add_series(data = fata, type = "mappoint",
-                dataLabels = list(enabled = FALSE),
-                name = "F.A.T.A.", 
-                color = "black", stickyTracking = TRUE,
-                animation = list(duration = 4000)) %>%
-  hc_add_series(data = kashmir, type = "mappoint",
-                dataLabels = list(enabled = FALSE),
-                name = "Azad Kasmir",  
-                color = "pink", stickyTracking = TRUE, 
                 animation = list(duration = 4000)) %>%
   hc_add_series(data = capital, type = "mappoint",
                 dataLabels = list(enabled = FALSE),
