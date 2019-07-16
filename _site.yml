@@ -1,6 +1,6 @@
 name: "my-website"
 navbar:
-  title: "Altamash's First Dashboard"
+  title: "Pakistan Literacy"
   left:
-    - text: "Dashboard"
+    - text: "Pakistan Literacy"
       href: index.html

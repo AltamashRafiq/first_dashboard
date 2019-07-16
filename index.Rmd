@@ -1,5 +1,5 @@
 ---
-title: "Altamash's First Dashboard"
+title: "Literacy in Pakistan - PSLM 2014/15"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
@@ -8,52 +8,148 @@ output:
 
 ```{r setup, include=FALSE}
 library(flexdashboard)
-library(dplyr)
-library(babynames)
-library(dygraphs)
+```
+
+Column {data-width=750}
+-----------------------------------------------------------------------
+
+### Mappoint Chart of Literacy Rates
+
+```{r results='asis'}
+library(geojsonio)
+library(sf)
 library(highcharter)
+library(tmaptools)
+library(tidyverse)
+
+nash = read_shape("/Users/altamashrafiq/Desktop/PSLM/Backups/2014-15/simple_nash.shp", stringsAsFactors = FALSE)
+nash_geo = nash %>% geojson_list()
+centers = readRDS("centers.Rda") 
+centers = centers %>% dplyr::select(-geometry)
+centers_geojson = geojson_list(centers, lat = "lat", lon = "lon")
+
+data = read_csv("sample_df.csv")
+district_data = data %>%
+  group_by(district, scq01) %>% drop_na() %>% summarize(Count = n()) %>% group_by(district) %>% 
+  mutate(Perc = round(((Count/sum(Count))*100), 1))
+
+library(data.table)
+read = dcast(setDT(district_data), district ~ scq01, value.var = c("Count", "Perc")) 
+read_df = merge(centers, read, by = "district")
+
+punjab = read_df %>% filter(province == "Punjab") %>% geojson_list(lat = "lat", lon = "lon")
+sindh = read_df %>% filter(province == "Sindh") %>% geojson_list(lat = "lat", lon = "lon")
+baloch = read_df %>% filter(province == "Balochistan") %>% geojson_list(lat = "lat", lon = "lon")
+kpk = read_df %>% filter(province == "Khyber Pakhtunkhwa") %>% geojson_list(lat = "lat", lon = "lon")
+fata = read_df %>% filter(province == "F.A.T.A.") %>% geojson_list(lat = "lat", lon = "lon")
+kashmir = read_df %>% filter(province == "Azad Kashmir") %>% geojson_list(lat = "lat", lon = "lon")
+capital = read_df %>% filter(province == "Federal Capital Territory") %>% geojson_list(lat = "lat", lon = "lon")
+gilgit = read_df %>% filter(province == "Gilgit Baltistan") %>% geojson_list(lat = "lat", lon = "lon")
+
+library(htmlTable)
+library(knitr)
+library(kableExtra)
+table = matrix(c("{point.properties.Count_Yes}","{point.properties.Count_No}",
+                 "{point.properties.Perc_Yes}%", "{point.properties.Perc_No}%"),
+       nrow = 2,
+       ncol = 2,
+       dimnames = list(c("Yes:&nbsp;&nbsp;", "No:&nbsp;&nbsp;"),
+                       c("&nbsp;Responders&nbsp;", "&nbsp;Percentage&nbsp;"))) %>% 
+  htmlTable(cgroup = c("<h2><font color={series.color}>{point.properties.district}</font></h2>"))
+
+highchart(type = "map") %>%
+  hc_add_series(mapData = nash_geo, showInLegend = FALSE) %>%
+  hc_add_series(data = punjab, type = "mappoint",
+                dataLabels = list(enabled = FALSE),
+                name = "Punjab",
+                color = "darkgreen", stickyTracking = TRUE,
+                animation = list(duration = 4000),
+                borderColor = '#cccccc') %>%
+  hc_add_series(data = sindh, type = "mappoint",
+                dataLabels = list(enabled = FALSE),
+                name = "Sindh", 
+                color = "darkred", stickyTracking = TRUE,
+                animation = list(duration = 4000)) %>%
+  hc_add_series(data = baloch, type = "mappoint",
+                dataLabels = list(enabled = FALSE),
+                name = "Balochistan", 
+                color = "orange", stickyTracking = TRUE,
+                animation = list(duration = 4000)) %>%
+  hc_add_series(data = kpk, type = "mappoint",
+                dataLabels = list(enabled = FALSE),
+                name = "Khyber Pakhtunkhwa", 
+                color = "skyblue", stickyTracking = TRUE,
+                animation = list(duration = 4000)) %>%
+  hc_add_series(data = fata, type = "mappoint",
+                dataLabels = list(enabled = FALSE),
+                name = "F.A.T.A.", 
+                color = "black", stickyTracking = TRUE,
+                animation = list(duration = 4000)) %>%
+  hc_add_series(data = kashmir, type = "mappoint",
+                dataLabels = list(enabled = FALSE),
+                name = "Azad Kasmir",  
+                color = "pink", stickyTracking = TRUE, 
+                animation = list(duration = 4000)) %>%
+  hc_add_series(data = capital, type = "mappoint",
+                dataLabels = list(enabled = FALSE),
+                name = "Federal Capital",
+                color = "darkblue", stickyTracking = TRUE,
+                animation = list(duration = 4000)) %>%
+  hc_plotOptions(
+    series = list(animation = TRUE, marker = list(radius = 4, symbol = "circle", states = list(hover = list(enabled = TRUE, radius = 12))))
+  ) %>%
+  hc_tooltip(
+    pointFormat = table,
+    useHTML = TRUE
+  )
 ```
 
-Column {data-width=650}
+Column {data-width=250}
 -----------------------------------------------------------------------
 
-### Chart A
+### Below National Average
 
 ```{r}
-lungDeaths <- cbind(mdeaths, fdeaths)
-dygraph(lungDeaths) %>%
-  dySeries("mdeaths", label = "Male") %>%
-  dySeries("fdeaths", label = "Female") %>%
-  dyOptions(stackedGraph = TRUE) %>%
-  dyRangeSelector(height = 20)
+nash_no = data %>% filter(scq01 == "No") %>% nrow()
+nash_yes = data %>% filter(scq01 == "Yes") %>% nrow()
+nash_avg = round(nash_yes/(nash_yes + nash_no) * 100, 1)
+below_nash_avg = district_data %>%
+  filter(scq01 == "Yes") %>%
+  filter(Perc < nash_avg) %>% nrow()
+
+valueBox(value = paste(below_nash_avg, "Districts"),
+         color = "danger",
+         icon = "fa-exclamation-triangle")
 ```
 
-Column {data-width=350}
------------------------------------------------------------------------
-
-### Chart B
+### Literacy Rate of Surveyed Population
 
 ```{r}
-df = babynames %>%
-  filter(grepl("^I", name)) %>%
-  group_by(name) %>%
-  tally(wt=n) %>%
-  arrange(desc(n)) %>%
-  slice(1:4)
-  
-highchart() %>%
-  hc_chart(type = "column") %>%
-  hc_title(text = "Test") %>%
-  hc_xAxis(categories = as.list(df[["name"]])) %>%
-  hc_plotOptions(column = list(dataLabels = list(enabled = TRUE))) %>%
-  hc_add_series(name = "Irene", data = df[["n"]][which(df[["name"]] == "Irene")]) %>%
-  hc_add_series(name = "Isabella", data = df[["n"]][which(df[["name"]] == "Isabella")]) %>%
-  hc_add_series(name = "Isaac", data = df[["n"]][which(df[["name"]] == "Isaac")]) %>%
-  hc_add_series(name = "Ian", data = df[["n"]][which(df[["name"]] == "Ian")])
+valueBox(value = paste0(nash_avg,"%"),
+         icon = "fa-tachometer-alt",
+         color = "primary")
 ```
 
-### Chart C
+### Responders to this Question
 
 ```{r}
-plot(iris)
+responders = district_data %>% pull("Count") %>% 
+  sum() %>%
+  formatC(format="d", big.mark=",")
+valueBox(value = responders,
+         icon = "fa-user-check",
+         color = "info")
+```
+
+### Literacy Rates by District
+
+```{r}
+yessers = district_data %>%
+  filter(scq01 == "Yes") %>%
+  dplyr::select(district, Perc) %>%
+  arrange(desc(Perc)) %>%
+  mutate(Perc = paste0(Perc, "%"))
+names(yessers) = c("Distrct", "Can Read/Write")
+yessers %>%
+  kable() %>% kable_styling(bootstrap_options = "striped", full_width = F)
 ```
