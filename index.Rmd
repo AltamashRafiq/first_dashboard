@@ -36,12 +36,11 @@ district_data = data %>%
 library(data.table)
 read = dcast(setDT(district_data), district ~ scq01, value.var = c("Count", "Perc")) 
 read_df = merge(centers, read, by = "district")
-
-punjab = read_df %>% filter(province == "Punjab") %>% geojson_list(lat = "lat", lon = "lon")
-sindh = read_df %>% filter(province == "Sindh") %>% geojson_list(lat = "lat", lon = "lon")
-baloch = read_df %>% filter(province == "Balochistan") %>% geojson_list(lat = "lat", lon = "lon")
-kpk = read_df %>% filter(province == "Khyber Pakhtunkhwa") %>% geojson_list(lat = "lat", lon = "lon")
-capital = read_df %>% filter(province == "Federal Capital Territory") %>% geojson_list(lat = "lat", lon = "lon")
+# Perc_Yes
+over_seventy = read_df %>% filter(Perc_Yes >= 65) %>% geojson_list(lat = "lat", lon = "lon")
+over_fifty = read_df %>% filter(Perc_Yes >= 50 & Perc_Yes < 65) %>% geojson_list(lat = "lat", lon = "lon")
+over_forty = read_df %>% filter(Perc_Yes >= 40 & Perc_Yes < 50) %>% geojson_list(lat = "lat", lon = "lon")
+under_forty = read_df %>% filter(Perc_Yes < 40) %>% geojson_list(lat = "lat", lon = "lon")
 
 library(htmlTable)
 library(knitr)
@@ -56,31 +55,26 @@ table = matrix(c("{point.properties.Count_Yes}","{point.properties.Count_No}",
 
 highchart(type = "map") %>%
   hc_add_series(mapData = nash_geo, showInLegend = FALSE) %>%
-  hc_add_series(data = punjab, type = "mappoint",
+  hc_add_series(data = over_seventy, type = "mappoint",
                 dataLabels = list(enabled = FALSE),
-                name = "Punjab",
-                color = "darkgreen", stickyTracking = TRUE,
+                name = "Most Literatre Districts",
+                color = "darkblue", stickyTracking = TRUE,
                 animation = list(duration = 4000),
                 borderColor = '#cccccc') %>%
-  hc_add_series(data = sindh, type = "mappoint",
+  hc_add_series(data = over_fifty, type = "mappoint",
                 dataLabels = list(enabled = FALSE),
-                name = "Sindh", 
-                color = "darkred", stickyTracking = TRUE,
+                name = "Above Average Literacy", 
+                color = "green", stickyTracking = TRUE,
                 animation = list(duration = 4000)) %>%
-  hc_add_series(data = baloch, type = "mappoint",
+  hc_add_series(data = over_forty, type = "mappoint",
                 dataLabels = list(enabled = FALSE),
-                name = "Balochistan", 
+                name = "Below Average Literacy", 
                 color = "orange", stickyTracking = TRUE,
                 animation = list(duration = 4000)) %>%
-  hc_add_series(data = kpk, type = "mappoint",
+  hc_add_series(data = under_forty, type = "mappoint",
                 dataLabels = list(enabled = FALSE),
-                name = "Khyber Pakhtunkhwa", 
-                color = "skyblue", stickyTracking = TRUE,
-                animation = list(duration = 4000)) %>%
-  hc_add_series(data = capital, type = "mappoint",
-                dataLabels = list(enabled = FALSE),
-                name = "Federal Capital",
-                color = "darkblue", stickyTracking = TRUE,
+                name = "Very Low Literacy", 
+                color = "darkred", stickyTracking = TRUE,
                 animation = list(duration = 4000)) %>%
   hc_plotOptions(
     series = list(animation = TRUE, marker = list(radius = 4, symbol = "circle", states = list(hover = list(enabled = TRUE, radius = 12))))
@@ -94,7 +88,7 @@ highchart(type = "map") %>%
 Column {data-width=250}
 -----------------------------------------------------------------------
 
-### Below National Average
+### Below 50% Literacy
 
 ```{r}
 nash_no = data %>% filter(scq01 == "No") %>% nrow()
