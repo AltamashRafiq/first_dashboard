@@ -10,6 +10,9 @@ output:
 library(flexdashboard)
 ```
 
+Mappoint
+======================================================================
+
 Column {data-width=750}
 -----------------------------------------------------------------------
 
@@ -30,11 +33,13 @@ centers_geojson = geojson_list(centers, lat = "lat", lon = "lon")
 
 data = read_csv("sample_df.csv")
 district_data = data %>%
-  group_by(district, scq01) %>% drop_na() %>% summarize(Count = n()) %>% group_by(district) %>% 
+  group_by(district, scq01, province) %>% drop_na() %>% summarize(Count = n()) %>% group_by(district) %>% 
   mutate(Perc = round(((Count/sum(Count))*100), 1))
 
+provinces = data %>% select(district,province) %>% unique()
 library(data.table)
 read = dcast(setDT(district_data), district ~ scq01, value.var = c("Count", "Perc")) 
+read = left_join(read, provinces, by = "district")
 read_df = merge(centers, read, by = "district")
 # Perc_Yes
 over_seventy = read_df %>% filter(Perc_Yes >= 65) %>% geojson_list(lat = "lat", lon = "lon")
@@ -56,28 +61,35 @@ table = matrix(c("{point.properties.Count_Yes}","{point.properties.Count_No}",
 highchart(type = "map") %>%
   hc_add_series(mapData = nash_geo, showInLegend = FALSE) %>%
   hc_add_series(data = over_seventy, type = "mappoint",
-                dataLabels = list(enabled = FALSE),
+                dataLabels = list(enabled = FALSE), stickyTracking = FALSE,
                 name = "Most Literatre Districts",
-                color = "darkblue", stickyTracking = TRUE,
-                animation = list(duration = 4000),
-                borderColor = '#cccccc') %>%
+                color = "darkblue",
+                animation = list(duration = 4000)
+                ) %>%
   hc_add_series(data = over_fifty, type = "mappoint",
-                dataLabels = list(enabled = FALSE),
+                dataLabels = list(enabled = FALSE), stickyTracking = FALSE,
                 name = "Above Average Literacy", 
-                color = "green", stickyTracking = TRUE,
-                animation = list(duration = 4000)) %>%
+                color = "green",
+                animation = list(duration = 4000)
+                ) %>%
   hc_add_series(data = over_forty, type = "mappoint",
-                dataLabels = list(enabled = FALSE),
+                dataLabels = list(enabled = FALSE), stickyTracking = FALSE,
                 name = "Below Average Literacy", 
-                color = "orange", stickyTracking = TRUE,
-                animation = list(duration = 4000)) %>%
+                color = "orange"
+                ) %>%
   hc_add_series(data = under_forty, type = "mappoint",
-                dataLabels = list(enabled = FALSE),
+                dataLabels = list(enabled = FALSE), stickyTracking = FALSE,
                 name = "Very Low Literacy", 
-                color = "darkred", stickyTracking = TRUE,
-                animation = list(duration = 4000)) %>%
+                color = "darkred",
+                animation = list(duration = 4000)
+                ) %>%
   hc_plotOptions(
-    series = list(animation = TRUE, marker = list(radius = 4, symbol = "circle", states = list(hover = list(enabled = TRUE, radius = 12))))
+    series = list(animation = TRUE, stickingTacking = FALSE,
+                  marker = list(radius = 5, symbol = "circle",
+                                states = list(
+                                  hover = list(
+                                    enabled = TRUE, 
+                                    radius = 12))))
   ) %>%
   hc_tooltip(
     pointFormat = table,
@@ -134,3 +146,139 @@ names(yessers) = c("Distrct", "Can Read/Write")
 yessers %>%
   kable() %>% kable_styling(bootstrap_options = "striped", full_width = F)
 ```
+
+
+Choreopleth
+======================================================================
+
+Column {data-width=750}
+-----------------------------------------------------------------------
+
+### Choreopleth of Literacy Rates
+
+```{r results='asis'}
+shape_file = read_shape("/Users/altamashrafiq/Desktop/PSLM/Refined_PSLM/district_boundaries.shp", stringsAsFactors = FALSE) %>% arrange(district)
+shape_file_geo = geojson_list(shape_file)
+
+table2 = matrix(c("{point.Count_Yes}","{point.Count_No}",
+                 "{point.Perc_Yes}%", "{point.Perc_No}%"),
+       nrow = 2,
+       ncol = 2,
+       dimnames = list(c("Yes:&nbsp;&nbsp;", "No:&nbsp;&nbsp;"),
+                       c("&nbsp;Responders&nbsp;", "&nbsp;Percentage&nbsp;"))) %>% 
+  htmlTable(cgroup = c("<h2><font color={point.color}>{point.properties.district}</font></h2>"))
+
+highchart() %>%
+    hc_title(text = "Percentage of Answer") %>% 
+    hc_add_series_map(map = shape_file_geo, read, name = "Percentage", value = "Perc_Yes", joinBy = "district", borderColor = "black", borderWidth = 0.2) %>%
+    hc_plotOptions(
+    series = list(animation = TRUE,
+                  states = list(
+                    hover = list(color = "#a4edba")
+                  ))
+  ) %>%
+  hc_tooltip(
+    pointFormat = table2,
+    useHTML = TRUE
+  )
+```
+
+
+```{r results='asis'}
+# if (download_map_data) {
+#     mapdata <- shape_file_geo
+# }
+# hcmap("countries/us/us-all-all")
+# 
+# cities = read_df %>%
+#   select(district, lat, lon, Perc_Yes)
+# names(cities) = c("name", "lat", "lon", "z")
+# highchart(type = "map") %>%
+#   hc_add_series(mapData = shape_file_geo, showInLegend = FALSE) %>%
+#   hc_add_series(data = cities, type = "mapbubble", name = "Districts", maxSize = '10%')
+# 
+# highchart(type = "map") %>%
+#   hc_add_series(mapData = shape_file_geo) %>%
+#   hc_add_series(data = cities, type = "mapbubble", name = "Districts", maxSize = '10%')
+# 
+# hcmap("countries/pk/pk-all", showInLegend = FALSE) %>% 
+#   hc_add_series(data = cities, type = "mapbubble", name = "Cities", maxSize = 12,
+#                 marker = list(
+#                   states = list(
+#                     hover = list(radius = 10, fillColor = "#a4edba")
+#                   )
+#                 ),
+#                 minSize = 5,
+#                 )
+```
+
+
+Column {data-width=250}
+-----------------------------------------------------------------------
+
+### Below 50% Literacy
+
+```{r}
+nash_no = data %>% filter(scq01 == "No") %>% nrow()
+nash_yes = data %>% filter(scq01 == "Yes") %>% nrow()
+nash_avg = round(nash_yes/(nash_yes + nash_no) * 100, 1)
+below_nash_avg = district_data %>%
+  filter(scq01 == "Yes") %>%
+  filter(Perc < nash_avg) %>% nrow()
+
+valueBox(value = paste(below_nash_avg, "Districts"),
+         color = "danger",
+         icon = "fa-exclamation-triangle")
+```
+
+### Literacy Rate of Surveyed Population
+
+```{r}
+valueBox(value = paste0(nash_avg,"%"),
+         icon = "fa-tachometer-alt",
+         color = "primary")
+```
+
+### Responders to this Question
+
+```{r}
+responders = district_data %>% pull("Count") %>% 
+  sum() %>%
+  formatC(format="d", big.mark=",")
+valueBox(value = responders,
+         icon = "fa-user-check",
+         color = "info")
+```
+
+### Literacy Rates by District
+
+```{r}
+yessers = district_data %>%
+  filter(scq01 == "Yes") %>%
+  dplyr::select(district, Perc) %>%
+  arrange(desc(Perc)) %>%
+  mutate(Perc = paste0(Perc, "%"))
+names(yessers) = c("Distrct", "Can Read/Write")
+yessers %>%
+  kable() %>% kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
