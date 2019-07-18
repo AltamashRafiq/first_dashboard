@@ -148,13 +148,13 @@ yessers %>%
 ```
 
 
-Choreopleth
+Choropleth
 ======================================================================
 
 Column {data-width=750}
 -----------------------------------------------------------------------
 
-### Choreopleth of Literacy Rates
+### Choropleth of Literacy Rates
 
 ```{r results='asis'}
 shape_file = read_shape("/Users/altamashrafiq/Desktop/PSLM/Refined_PSLM/district_boundaries.shp", stringsAsFactors = FALSE) %>% arrange(district)
